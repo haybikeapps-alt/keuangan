@@ -1,0 +1,139 @@
+rules_version = '2';
+
+// =====================================================================
+//  HAYBIKE SYSTEM — FIRESTORE SECURITY RULES
+//  ---------------------------------------------------------------
+//  Model keamanan:
+//   1. Identitas tunggal  : Firebase Authentication (Email/Password).
+//                           Anonymous Auth HARUS DINONAKTIFKAN di Console.
+//   2. Otorisasi          : dokumen /users/{uid} menyimpan role & status.
+//                           Dokumen ini TIDAK PERNAH menyimpan password.
+//   3. Prinsip            : default deny. Semua koleksi ditulis eksplisit.
+//
+//  Cara deploy:
+//     firebase deploy --only firestore:rules
+//  atau salin-tempel berkas ini ke Console > Firestore > Rules > Publish.
+// =====================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- HELPER ----------
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function profilePath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    function hasProfile() {
+      return signedIn() && exists(profilePath());
+    }
+
+    function profile() {
+      return get(profilePath()).data;
+    }
+
+    // Pengguna sah = sudah login DAN punya profil DAN statusnya aktif.
+    // Menonaktifkan akun dari aplikasi otomatis memutus seluruh akses.
+    function isActive() {
+      return hasProfile() && profile().status == 'active';
+    }
+
+    function isAdmin() {
+      return isActive() && profile().role == 'admin';
+    }
+
+    function isKasir() {
+      return isActive() && profile().role == 'kasir';
+    }
+
+    // Nominal wajib angka non-negatif — mencegah entri jurnal sampah.
+    function validNominal() {
+      return request.resource.data.nominal is number
+             && request.resource.data.nominal >= 0;
+    }
+
+    // ---------- USERS / PROFIL & ROLE ----------
+    match /users/{uid} {
+      // Setiap orang boleh membaca profilnya sendiri (dibutuhkan saat login
+      // untuk mengetahui role). Admin boleh membaca seluruh daftar akun.
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+
+      // Hanya admin yang boleh membuat / mengubah / menghapus akun.
+      // Password DILARANG disimpan di Firestore — dijaga di level rule.
+      allow create: if isAdmin()
+                    && !('password' in request.resource.data)
+                    && !('pin' in request.resource.data)
+                    && request.resource.data.role in ['admin', 'kasir']
+                    && request.resource.data.status in ['active', 'nonactive'];
+
+      allow update: if isAdmin()
+                    && !('password' in request.resource.data)
+                    && !('pin' in request.resource.data)
+                    && request.resource.data.role in ['admin', 'kasir']
+                    && request.resource.data.status in ['active', 'nonactive'];
+
+      allow delete: if isAdmin() && request.auth.uid != uid; // admin tak bisa hapus diri sendiri
+    }
+
+    // ---------- PENGATURAN TOKO ----------
+    match /settings/{docId} {
+      allow read:  if isActive();   // kasir perlu header/footer struk
+      allow write: if isAdmin();
+    }
+
+    // ---------- MASTER COA ----------
+    match /accounts/{docId} {
+      allow read:  if isActive();
+      allow write: if isAdmin();
+    }
+
+    // ---------- MASTER BARANG ----------
+    match /products/{docId} {
+      allow read:            if isActive();
+      allow create, update:  if isActive();  // kasir memotong stok saat menjual
+      allow delete:          if isAdmin();
+    }
+
+    // ---------- TRANSAKSI PENJUALAN ----------
+    match /transactions/{docId} {
+      allow read:   if isActive();
+      allow create: if isActive();
+      allow update: if isActive();  // update status Lunas saat piutang dibayar
+      allow delete: if isAdmin();   // pembatalan struk = kewenangan pemilik
+    }
+
+    // ---------- JURNAL UMUM ----------
+    match /journals/{docId} {
+      allow create:        if isActive() && validNominal();
+      allow read:          if isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    // ---------- PIUTANG PELANGGAN ----------
+    match /piutang/{docId} {
+      allow read, create, update: if isActive();
+      allow delete:               if isAdmin();
+    }
+
+    match /piutang_bayar/{docId} {
+      allow read, create: if isActive();
+      allow update, delete: if isAdmin();
+    }
+
+    // ---------- UTANG, BANK, PAYROLL, PENYESUAIAN (KHUSUS ADMIN) ----------
+    match /utang/{docId}            { allow read, write: if isAdmin(); }
+    match /utang_bayar/{docId}      { allow read, write: if isAdmin(); }
+    match /utang_bank/{docId}       { allow read, write: if isAdmin(); }
+    match /utang_bank_bayar/{docId} { allow read, write: if isAdmin(); }
+    match /payrolls/{docId}         { allow read, write: if isAdmin(); }
+    match /jurnal_penyesuaian/{docId} { allow read, write: if isAdmin(); }
+
+    // ---------- DEFAULT: TOLAK ----------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

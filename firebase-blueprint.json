@@ -1,0 +1,125 @@
+{
+  "entities": {
+    "settings": {
+      "title": "Settings",
+      "description": "Application settings and credentials",
+      "properties": {
+        "password": { "type": "string" }
+      }
+    },
+    "accounts": {
+      "title": "Chart of Accounts",
+      "description": "Chart of accounts list",
+      "properties": {
+        "kode": { "type": "string" },
+        "nama": { "type": "string" },
+        "kelompok": { "type": "string" },
+        "kategori": { "type": "string" }
+      },
+      "required": ["kode", "nama", "kelompok"]
+    },
+    "products": {
+      "title": "Products / Barang",
+      "description": "Inventory product master",
+      "properties": {
+        "kode": { "type": "string" },
+        "nama": { "type": "string" },
+        "kategori": { "type": "string" },
+        "satuan": { "type": "string" },
+        "modal": { "type": "number" },
+        "jual": { "type": "number" },
+        "stok": { "type": "number" }
+      },
+      "required": ["kode", "nama", "kategori", "stok"]
+    },
+    "transactions": {
+      "title": "Transactions",
+      "description": "Sales and service transaction records",
+      "properties": {
+        "id": { "type": "string" },
+        "tanggal": { "type": "string" },
+        "tipe": { "type": "string" },
+        "itemsJson": { "type": "string" },
+        "total": { "type": "number" },
+        "metode": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["id", "tanggal", "tipe", "total"]
+    },
+    "journals": {
+      "title": "Journal Entries",
+      "description": "General journal entries",
+      "properties": {
+        "tanggal": { "type": "string" },
+        "bukti": { "type": "string" },
+        "debit": { "type": "string" },
+        "kredit": { "type": "string" },
+        "ket": { "type": "string" },
+        "nominal": { "type": "number" }
+      },
+      "required": ["tanggal", "bukti", "debit", "kredit", "nominal"]
+    },
+    "piutang": {
+      "title": "Piutang Usaha",
+      "description": "Accounts receivable",
+      "properties": {
+        "id": { "type": "string" },
+        "tanggal": { "type": "string" },
+        "namaPembeli": { "type": "string" },
+        "kontakPembeli": { "type": "string" },
+        "keterangan": { "type": "string" },
+        "nominal": { "type": "number" },
+        "status": { "type": "string" }
+      }
+    },
+    "piutang_bayar": {
+      "title": "Pembayaran Piutang",
+      "description": "Accounts receivable payment history",
+      "properties": {
+        "piutangId": { "type": "string" },
+        "tanggal": { "type": "string" },
+        "jumlah": { "type": "number" },
+        "metode": { "type": "string" },
+        "keterangan": { "type": "string" },
+        "sisa": { "type": "number" }
+      }
+    },
+    "utang": {
+      "title": "Utang Usaha",
+      "description": "Accounts payable",
+      "properties": {
+        "id": { "type": "string" },
+        "tanggal": { "type": "string" },
+        "namaSupplier": { "type": "string" },
+        "kontakSupplier": { "type": "string" },
+        "keterangan": { "type": "string" },
+        "nominal": { "type": "number" },
+        "status": { "type": "string" }
+      }
+    },
+    "utang_bayar": {
+      "title": "Pembayaran Utang",
+      "description": "Accounts payable payment history",
+      "properties": {
+        "utangId": { "type": "string" },
+        "tanggal": { "type": "string" },
+        "jumlah": { "type": "number" },
+        "metode": { "type": "string" },
+        "keterangan": { "type": "string" },
+        "sisa": { "type": "number" }
+      }
+    },
+    "jurnal_penyesuaian": {
+      "title": "Jurnal Penyesuaian",
+      "description": "Adjusting journal entries",
+      "properties": {
+        "tanggal": { "type": "string" },
+        "bukti": { "type": "string" },
+        "debit": { "type": "string" },
+        "kredit": { "type": "string" },
+        "keterangan": { "type": "string" },
+        "nominal": { "type": "number" }
+      }
+    }
+  }
+}
